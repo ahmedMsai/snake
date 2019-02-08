@@ -1,6 +1,8 @@
 #include <iostream>
 #include <conio.h>
-#include<string>
+#include <string>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 
@@ -11,6 +13,11 @@ const string gameOverText("GAME OVER");
 bool gameOver;
 bool quit;
 int x, y, fruitX, fruitY, score;
+int tailX[100], tailY[100];
+int nTail;
+
+int lmt;
+float speed;
 
 enum eDirection{ STOP=0, LEFT, RIGHT, UP, DOWN};
 eDirection dir;
@@ -18,12 +25,16 @@ eDirection dir;
 void start() {
 	gameOver = false;
 	quit = false;
+	lmt = 0;
 	score = 0;
 	dir = STOP;
+	nTail = 0;
+	speed = 1000;
 
 	x = width / 2;
 	y = height / 2;
 
+	srand(time(NULL));
 	fruitX = rand() % width;
 	fruitY = rand() % height;
 
@@ -52,7 +63,19 @@ void drow() {
 				cout << "x";
 			}
 			else {
-				cout << " ";
+				bool isTail = false;
+				for (int k = 0; k < nTail; k++)
+				{
+					if (tailX[k] == i && tailY[k] == j) {
+						cout << "o";
+						isTail = true;
+						break;
+					}
+					
+				}
+				if(!isTail){
+					cout << " ";
+				}
 			}
 			
 
@@ -69,23 +92,24 @@ void drow() {
 		cout << "#";
 	}
 	cout << endl;
+	cout << "score : " << score << " | time : " << time(NULL);
 }
 
 void input() {
-	if (_kbhit) {
+	if (_kbhit()) {
 		switch (_getch())
 		{
 			case 'q':
-				dir = LEFT;
+				if (dir != RIGHT)dir = LEFT;
 				break;	
 			case 'd':
-				dir = RIGHT;
+				if (dir != LEFT)dir = RIGHT;
 				break;
 			case 'z':
-				dir = UP;
+				if (dir != DOWN)dir = UP;
 				break;
 			case 's':
-				dir = DOWN;
+				if (dir != UP)dir = DOWN;
 				break;
 			case 'o':
 				gameOver = true;
@@ -101,26 +125,55 @@ void input() {
 }
 
 void logic() {
-	switch (dir) {
-	case LEFT:
-		x--;
-		break;
-	case RIGHT:
-		x++;
-		break;
-	case UP:
-		y--;
-		break;
-	case DOWN:
-		y++;
-		break;
-	default:
-		break;
+	int prevX = x;
+	int prevY = y;
+	int prevX2, prevY2;
+	for (int i = 0; i < nTail; i++) {
+		prevX2 = tailX[i];
+		prevY2 = tailY[i];
+		tailX[i] = prevX;
+		tailY[i] = prevY;
+		prevX = prevX2;
+		prevY = prevY2;
 	}
 
-	if (x == 0 || x == width + 2 || y == 0 || y == height - 1) {
+	time_t time = std::time(NULL);
+	if (time >= lmt + speed) {
+		switch (dir) {
+		case LEFT:
+			x--;
+			break;
+		case RIGHT:
+			x++;
+			break;
+		case UP:
+			y--;
+			break;
+		case DOWN:
+			y++;
+			break;
+		default:
+			break;
+		}
+
+		//lmt = time -1;
+	}
+	
+	if (x == fruitX && y==fruitY) {
+		fruitX = rand() % width;
+		fruitY = rand() % height;
+		score += 10;
+		nTail++;
+	}
+	if (x<0 || x >= width || y<0 || y>=height) {
 		gameOver = true;
 	}
+	for (int i = 0; i < nTail; i++) {
+		if (x == tailX[i] && y== tailY[i]) {
+			gameOver = true;
+		}
+	}
+	
 }
 
 
@@ -161,15 +214,16 @@ void drowGameOver() {
 		cout << "#";
 	}
 	cout << endl;
+	cout << "score : " << score;
 }
 int main() {
 
 	start();
-	do{
+	while (!gameOver){
 		drow();
 		input();
 		logic();
-	} while (!gameOver);
+	}
 
 
 
